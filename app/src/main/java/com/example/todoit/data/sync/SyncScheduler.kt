@@ -23,15 +23,28 @@ class SyncScheduler @Inject constructor(
         private const val IMMEDIATE_WORK_NAME = "todoit_immediate_sync"
     }
 
-    private val networkConstraints = Constraints.Builder()
+    /**
+     * Periodic constraints: network + battery-not-low are both fine for background
+     * periodic work (battery constraint is allowed on non-expedited jobs).
+     */
+    private val periodicConstraints = Constraints.Builder()
         .setRequiredNetworkType(NetworkType.CONNECTED)
         .setRequiresBatteryNotLow(true)
+        .build()
+
+    /**
+     * Expedited constraints: WorkManager only permits network and storage constraints
+     * on expedited jobs — battery constraints are explicitly forbidden and cause a
+     * runtime exception ("Expedited jobs only support network and storage constraints").
+     */
+    private val expeditedConstraints = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.CONNECTED)
         .build()
 
     /** Schedule periodic sync every 15 minutes when connected and battery is ok. */
     fun schedulePeriodicSync() {
         val request = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
-            .setConstraints(networkConstraints)
+            .setConstraints(periodicConstraints)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES)
             .build()
 
@@ -45,7 +58,7 @@ class SyncScheduler @Inject constructor(
     /** Trigger an immediate expedited sync (debounced — replaces any pending one). */
     fun triggerImmediateSync() {
         val request = OneTimeWorkRequestBuilder<SyncWorker>()
-            .setConstraints(networkConstraints)
+            .setConstraints(expeditedConstraints)
             .setExpedited(androidx.work.OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .build()
 

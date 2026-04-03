@@ -1,10 +1,12 @@
 package com.example.todoit.presentation.todos
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,15 +16,19 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,7 +58,18 @@ fun TodoDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val todoTitle by viewModel.todoTitle.collectAsStateWithLifecycle()
+    val deletingTaskId by viewModel.deletingTaskId.collectAsStateWithLifecycle()
+    val snackbarMessage by viewModel.snackbarMessage.collectAsStateWithLifecycle()
+
     var deleteTarget by remember { mutableStateOf<Task?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Show snackbar whenever the ViewModel produces a message (success or error).
+    LaunchedEffect(snackbarMessage) {
+        val msg = snackbarMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(msg)
+        viewModel.onSnackbarShown()
+    }
 
     Scaffold(
         topBar = {
@@ -69,7 +86,8 @@ fun TodoDetailScreen(
             FloatingActionButton(onClick = { navController.navigate(Screen.taskEdit(todoId)) }) {
                 Icon(Icons.Default.Add, contentDescription = "New task")
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         when (val state = uiState) {
             is TodoDetailUiState.Loading -> {}
@@ -86,6 +104,7 @@ fun TodoDetailScreen(
                         items(state.tasks, key = { it.id }) { task ->
                             TaskCard(
                                 task = task,
+                                isDeleting = deletingTaskId == task.id,
                                 onEdit = { navController.navigate(Screen.taskEdit(todoId, task.id)) },
                                 onDelete = { deleteTarget = task },
                             )
@@ -98,15 +117,24 @@ fun TodoDetailScreen(
     deleteTarget?.let { task ->
         ConfirmDeleteDialog(
             title = "Delete \"${task.title}\"?",
-            onConfirm = { viewModel.delete(task.id); deleteTarget = null },
+            onConfirm = {
+                viewModel.delete(task.id)
+                deleteTarget = null
+            },
             onDismiss = { deleteTarget = null },
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TaskCard(task: Task, onEdit: () -> Unit, onDelete: () -> Unit) {
-    val fmt = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault())
+private fun TaskCard(
+    task: Task,
+    isDeleting: Boolean,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val fmt = remember { SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()) }
     Card(
         onClick = onEdit,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
@@ -114,9 +142,28 @@ private fun TaskCard(task: Task, onEdit: () -> Unit, onDelete: () -> Unit) {
     ) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(task.title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete task")
+                Text(
+                    task.title,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                // Show a loading spinner while this specific task is being deleted;
+                // keep the icon tappable area fixed-size so other cards don't jump.
+                Box(
+                    modifier = Modifier.size(48.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (isDeleting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    } else {
+                        IconButton(onClick = onDelete) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete task")
+                        }
+                    }
                 }
             }
             Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -133,4 +180,3 @@ private fun TaskCard(task: Task, onEdit: () -> Unit, onDelete: () -> Unit) {
         }
     }
 }
-

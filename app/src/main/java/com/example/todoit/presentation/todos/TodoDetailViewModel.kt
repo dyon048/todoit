@@ -44,6 +44,14 @@ class TodoDetailViewModel @Inject constructor(
             .catch { emit(TodoDetailUiState.Error(it.message ?: "Unknown error")) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TodoDetailUiState.Loading)
 
+    /** ID of the task currently being soft-deleted. Null when idle. */
+    private val _deletingTaskId = MutableStateFlow<String?>(null)
+    val deletingTaskId: StateFlow<String?> = _deletingTaskId.asStateFlow()
+
+    /** One-shot message to display in a Snackbar. Null when nothing to show. */
+    private val _snackbarMessage = MutableStateFlow<String?>(null)
+    val snackbarMessage: StateFlow<String?> = _snackbarMessage.asStateFlow()
+
     init {
         viewModelScope.launch {
             val todo = todoRepository.getTodoById(todoId)
@@ -51,6 +59,18 @@ class TodoDetailViewModel @Inject constructor(
         }
     }
 
-    fun delete(taskId: String) = viewModelScope.launch { runCatching { deleteTask(taskId) } }
-}
+    fun delete(taskId: String) = viewModelScope.launch {
+        _deletingTaskId.value = taskId
+        runCatching { deleteTask(taskId) }
+            .onSuccess { _snackbarMessage.value = "Task deleted" }
+            .onFailure { e ->
+                _snackbarMessage.value = "Delete failed: ${e.message ?: "Unknown error"}"
+            }
+        _deletingTaskId.value = null
+    }
 
+    /** Call after the Snackbar has been shown so it doesn't re-appear. */
+    fun onSnackbarShown() {
+        _snackbarMessage.value = null
+    }
+}
