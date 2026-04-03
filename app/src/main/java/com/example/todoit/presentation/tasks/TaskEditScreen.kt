@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -20,11 +21,14 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -34,7 +38,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -170,7 +176,7 @@ fun TaskEditScreen(
                 }
             }
 
-            // Reminder (optional)
+            // ── Reminder time ────────────────────────────────────────────────────
             Text("Reminder (optional)", style = MaterialTheme.typography.labelMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
@@ -184,6 +190,67 @@ fun TaskEditScreen(
                 if (form.reminderAt != null) {
                     TextButton(onClick = { viewModel.onReminderChange(null) }) { Text("Clear") }
                 }
+            }
+
+            // ── Location trigger ─────────────────────────────────────────────────
+            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Location trigger", style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        "Get notified when near this location",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = form.locationEnabled,
+                    onCheckedChange = viewModel::onLocationToggle,
+                )
+            }
+
+            if (form.locationEnabled) {
+                OutlinedTextField(
+                    value = form.locationLabel,
+                    onValueChange = viewModel::onLocationLabelChange,
+                    label = { Text("Location label (optional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = form.locationLat,
+                        onValueChange = viewModel::onLocationLatChange,
+                        label = { Text("Latitude") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        isError = form.locationLat.isNotBlank() && form.locationLat.toDoubleOrNull() == null,
+                    )
+                    OutlinedTextField(
+                        value = form.locationLng,
+                        onValueChange = viewModel::onLocationLngChange,
+                        label = { Text("Longitude") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        isError = form.locationLng.isNotBlank() && form.locationLng.toDoubleOrNull() == null,
+                    )
+                }
+                Text(
+                    "Radius: ${form.locationRadius.toInt()} m",
+                    style = MaterialTheme.typography.labelMedium,
+                )
+                Slider(
+                    value = form.locationRadius,
+                    onValueChange = viewModel::onLocationRadiusChange,
+                    valueRange = 100f..5000f,
+                    steps = 49, // steps of ~100m
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
 
             Spacer(Modifier.height(72.dp)) // FAB clearance

@@ -4,7 +4,9 @@ import com.example.todoit.domain.model.Location
 import com.example.todoit.domain.model.Schedule
 import com.example.todoit.domain.model.Task
 import com.example.todoit.domain.model.TaskStatus
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.atan2
@@ -34,12 +36,12 @@ class TaskScorer @Inject constructor(
         location: Location?,
         userLat: Double?,
         userLng: Double?,
-        schedule: Schedule?,
+        schedule: Schedule? = null,
         now: Long = System.currentTimeMillis(),
     ): Float {
         if (task.status == TaskStatus.DONE) return -1f
 
-        val nowDt = LocalDateTime.now()
+        val nowDt = LocalDateTime.ofInstant(Instant.ofEpochMilli(now), ZoneId.systemDefault())
         if (!scheduleEvaluator.isScheduleActive(schedule, nowDt)) return -1f
 
         var pts = 0f

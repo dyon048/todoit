@@ -3,8 +3,10 @@ package com.example.todoit.presentation.tasks
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todoit.domain.model.Location
 import com.example.todoit.domain.model.Task
 import com.example.todoit.domain.model.TaskStatus
+import com.example.todoit.domain.repository.LocationRepository
 import com.example.todoit.domain.repository.TaskRepository
 import com.example.todoit.domain.usecase.task.UpsertTaskUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +30,17 @@ data class TaskEditFormState(
     val inheritSchedule: Boolean = true,
     /** 0L = new task (UpsertTaskUseCase will assign createdAt); non-zero = original task timestamp. */
     val originalCreatedAt: Long = 0L,
+    // ── Location ───────────────────────────────────────────────────────────────
+    /** true when user has toggled "Enable location trigger" */
+    val locationEnabled: Boolean = false,
+    /** existing location id when editing a task that already has one */
+    val locationId: String? = null,
+    val locationLabel: String = "",
+    val locationLat: String = "",
+    val locationLng: String = "",
+    /** Geofence radius in metres (100–5000) */
+    val locationRadius: Float = 300f,
+    // ── Save state ─────────────────────────────────────────────────────────────
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
     val error: String? = null,
@@ -37,6 +50,7 @@ data class TaskEditFormState(
 class TaskEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val taskRepository: TaskRepository,
+    private val locationRepository: LocationRepository,
     private val upsertTask: UpsertTaskUseCase,
 ) : ViewModel() {
 
@@ -51,6 +65,8 @@ class TaskEditViewModel @Inject constructor(
             viewModelScope.launch {
                 val task = taskRepository.getTaskById(taskId)
                 if (task != null) {
+                    // Load any linked location
+                    val loc = task.locationId?.let { locationRepository.getLocationById(it) }
                     _form.update {
                         it.copy(
                             id = task.id,
@@ -63,6 +79,12 @@ class TaskEditViewModel @Inject constructor(
                             reminderAt = task.reminderAt,
                             inheritSchedule = task.inheritSchedule,
                             originalCreatedAt = task.createdAt,
+                            locationEnabled = loc != null,
+                            locationId = loc?.id,
+                            locationLabel = loc?.label ?: "",
+                            locationLat = loc?.latitude?.toString() ?: "",
+                            locationLng = loc?.longitude?.toString() ?: "",
+                            locationRadius = loc?.radiusMeters ?: 300f,
                         )
                     }
                 }
@@ -70,6 +92,7 @@ class TaskEditViewModel @Inject constructor(
         }
     }
 
+    // ── Form handlers ─────────────────────────────────────────────────────────
     fun onTitleChange(v: String) = _form.update { it.copy(title = v, error = null) }
     fun onStatusChange(v: TaskStatus) = _form.update { it.copy(status = v) }
     fun onPriorityChange(v: Int) = _form.update { it.copy(priority = v) }
@@ -77,15 +100,52 @@ class TaskEditViewModel @Inject constructor(
     fun onStartTimeChange(v: Long?) = _form.update { it.copy(startTime = v) }
     fun onReminderChange(v: Long?) = _form.update { it.copy(reminderAt = v) }
 
+    fun onLocationToggle(enabled: Boolean) = _form.update { it.copy(locationEnabled = enabled) }
+    fun onLocationLabelChange(v: String) = _form.update { it.copy(locationLabel = v) }
+    fun onLocationLatChange(v: String) = _form.update { it.copy(locationLat = v) }
+    fun onLocationLngChange(v: String) = _form.update { it.copy(locationLng = v) }
+    fun onLocationRadiusChange(v: Float) = _form.update { it.copy(locationRadius = v) }
+
+    // ── Save ─────────────────────────────────────────────────────────────────
     fun save() {
         val f = _form.value
         if (f.title.isBlank()) {
             _form.update { it.copy(error = "Title is required") }
             return
         }
+        if (f.locationEnabled) {
+            val lat = f.locationLat.toDoubleOrNull()
+            val lng = f.locationLng.toDoubleOrNull()
+            if (lat == null || lng == null || lat !in -90.0..90.0 || lng !in -180.0..180.0) {
+                _form.update { it.copy(error = "Invalid location coordinates") }
+                return
+            }
+        }
         _form.update { it.copy(isSaving = true, error = null) }
         viewModelScope.launch {
             runCatching {
+                val resolvedLocationId: String? = if (f.locationEnabled) {
+                    val lat = f.locationLat.toDouble()
+                    val lng = f.locationLng.toDouble()
+                    val locId = f.locationId ?: UUID.randomUUID().toString()
+                    locationRepository.upsertLocation(
+                        Location(
+                            id = locId,
+                            label = f.locationLabel.ifBlank { "Task location" },
+                            latitude = lat,
+                            longitude = lng,
+                            radiusMeters = f.locationRadius,
+                            updatedAt = System.currentTimeMillis(),
+                            deletedAt = null,
+                        )
+                    )
+                    locId
+                } else {
+                    // If location was disabled on an existing task, soft-delete the old location
+                    if (f.locationId != null) locationRepository.softDeleteLocation(f.locationId)
+                    null
+                }
+
                 upsertTask(
                     Task(
                         id = f.id.ifBlank { UUID.randomUUID().toString() },
@@ -96,14 +156,14 @@ class TaskEditViewModel @Inject constructor(
                         dueDate = f.dueDate,
                         startTime = f.startTime,
                         reminderAt = f.reminderAt,
-                        locationId = null,
+                        locationId = resolvedLocationId,
                         scheduleId = null,
                         inheritSchedule = f.inheritSchedule,
                         recurrenceId = null,
                         recurrenceInstanceDate = null,
                         parentTaskId = null,
                         scoreCache = 0f,
-                        createdAt = f.originalCreatedAt, // 0L for new tasks → UpsertTaskUseCase sets now
+                        createdAt = f.originalCreatedAt,
                         updatedAt = System.currentTimeMillis(),
                         deletedAt = null,
                     )
@@ -116,4 +176,3 @@ class TaskEditViewModel @Inject constructor(
         }
     }
 }
-
