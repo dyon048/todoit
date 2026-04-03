@@ -47,13 +47,14 @@ fun GroupDetailScreen(
     viewModel: GroupDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val groupName by viewModel.groupName.collectAsStateWithLifecycle()
     var showAddDialog by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<TodoItem?>(null) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Todos") },
+                title = { Text(if (groupName.isBlank()) "Todos" else "$groupName Todos") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

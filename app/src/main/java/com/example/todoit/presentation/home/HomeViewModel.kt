@@ -2,6 +2,8 @@ package com.example.todoit.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todoit.data.location.FusedLocationProvider
+import com.example.todoit.data.location.GeofenceManager
 import com.example.todoit.domain.model.Task
 import com.example.todoit.domain.model.TaskStatus
 import com.example.todoit.domain.repository.TaskRepository
@@ -25,6 +27,8 @@ sealed interface HomeUiState {
 class HomeViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val refreshScoreCache: RefreshScoreCacheUseCase,
+    private val locationProvider: FusedLocationProvider,
+    private val geofenceManager: GeofenceManager,
 ) : ViewModel() {
 
     /** Observed from Room, sorted by scoreCache DESC. */
@@ -36,13 +40,27 @@ class HomeViewModel @Inject constructor(
             .catch { emit(HomeUiState.Error(it.message ?: "Unknown error")) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState.Loading)
 
-    // Current user location (updated from passive FusedLocation in Phase 4)
     private var userLat: Double? = null
     private var userLng: Double? = null
 
     init {
         refreshScores()
+        // Collect passive location updates and re-score on each new fix
+        viewModelScope.launch {
+            locationProvider.locationUpdates.collect { (lat, lng) ->
+                refreshScores(lat, lng)
+            }
+        }
+        // Re-register geofences whenever the task list changes
+        viewModelScope.launch {
+            taskRepository.observeAllActiveSortedByScore().collect { tasks ->
+                geofenceManager.registerGeofencesForActiveTasks(tasks)
+            }
+        }
     }
+
+    /** Starts passive location updates. Call after location permission is granted. */
+    fun startLocationUpdates() = locationProvider.startPassiveUpdates()
 
     fun refreshScores(lat: Double? = null, lng: Double? = null) {
         if (lat != null) userLat = lat
@@ -51,4 +69,10 @@ class HomeViewModel @Inject constructor(
             runCatching { refreshScoreCache(userLat, userLng) }
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        locationProvider.stopUpdates()
+    }
 }
+

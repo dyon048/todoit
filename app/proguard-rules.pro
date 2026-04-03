@@ -65,3 +65,13 @@
 -dontwarn org.apache.http.**
 -dontwarn android.net.http.AndroidHttpClient
 -dontwarn com.android.internal.http.multipart.**
+
+# ── Location & Geofencing ─────────────────────────────────────────────────────
+-keep class com.google.android.gms.location.** { *; }
+-keep class com.google.android.gms.tasks.** { *; }
+
+# ── BroadcastReceivers (must not be obfuscated) ───────────────────────────────
+-keep class com.example.todoit.notification.BootReceiver { *; }
+-keep class com.example.todoit.notification.ReminderBroadcastReceiver { *; }
+-keep class com.example.todoit.notification.GeofenceBroadcastReceiver { *; }
+

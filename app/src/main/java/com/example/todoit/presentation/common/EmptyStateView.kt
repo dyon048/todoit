@@ -16,8 +16,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun EmptyStateView(
     title: String,
-    subtitle: String = "",
     modifier: Modifier = Modifier,
+    subtitle: String = "",
 ) {
     Column(
         modifier = modifier.fillMaxSize(),

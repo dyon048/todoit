@@ -20,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,14 +30,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
 import com.example.todoit.BuildConfig
+import com.example.todoit.presentation.common.Screen
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(
+    navController: NavHostController,
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val dateFmt = SimpleDateFormat("MMM d, yyyy HH:mm", Locale.getDefault())
@@ -118,7 +124,26 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
-            // ── About ─────────────────────────────────────────────────────
+            // ── Schedules ──────────────────────────────────────────────────
+            Text(
+                "Schedules",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            ListItem(
+                headlineContent   = { Text("Manage schedules") },
+                supportingContent = { Text("Define active days & hours for groups or tasks") },
+                trailingContent = {
+                    TextButton(onClick = { navController.navigate(Screen.SCHEDULES) }) {
+                        Text("Open")
+                    }
+                },
+            )
+
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+
+            // ── About ──────────────────────────────────────────────────────
             Text(
                 "About",
                 style = MaterialTheme.typography.titleSmall,

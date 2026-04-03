@@ -51,12 +51,13 @@ fun TodoDetailScreen(
     viewModel: TodoDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val todoTitle by viewModel.todoTitle.collectAsStateWithLifecycle()
     var deleteTarget by remember { mutableStateOf<Task?>(null) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tasks") },
+                title = { Text(if (todoTitle.isBlank()) "Tasks" else "$todoTitle Tasks") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

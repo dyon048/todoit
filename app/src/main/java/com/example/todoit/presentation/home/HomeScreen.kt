@@ -33,6 +33,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.example.todoit.domain.model.Task
+import com.example.todoit.presentation.common.AppPermissionsHandler
 import com.example.todoit.presentation.common.EmptyStateView
 import com.example.todoit.presentation.common.PriorityChip
 import com.example.todoit.presentation.common.Screen
@@ -52,6 +53,9 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var isRefreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    // Request location + notification permissions; start passive updates on grant
+    AppPermissionsHandler(onLocationGranted = { viewModel.startLocationUpdates() })
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("What To Do Now") }) }

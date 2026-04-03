@@ -28,7 +28,6 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.TodoIt">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -37,17 +36,39 @@
         </activity>
 
         <!-- Phase 4: Boot receiver to re-register alarms & geofences -->
-        <!-- <receiver android:name=".notification.BootReceiver" android:exported="true">
+        <receiver
+            android:name=".notification.BootReceiver"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
-        </receiver> -->
+        </receiver>
 
         <!-- Phase 4: Reminder alarm receiver -->
-        <!-- <receiver android:name=".notification.ReminderBroadcastReceiver" android:exported="false" /> -->
+        <receiver
+            android:name=".notification.ReminderBroadcastReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.todoit.REMINDER" />
+            </intent-filter>
+        </receiver>
 
-        <!-- Phase 4: Geofence transition receiver -->
-        <!-- <receiver android:name=".notification.GeofenceBroadcastReceiver" android:exported="true" /> -->
+        <!-- Phase 4: Geofence transition receiver (explicit PendingIntent – no export needed) -->
+        <receiver
+            android:name=".notification.GeofenceBroadcastReceiver"
+            android:exported="false" />
+
+        <!-- Opt out of WorkManager auto-init; we supply our own Configuration via Configuration.Provider -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
 
     </application>
 
