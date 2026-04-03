@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todoit.data.local.AppPreferences
 import com.example.todoit.data.remote.auth.GoogleAuthManager
+import com.example.todoit.data.sync.SyncManager
 import com.example.todoit.data.sync.SyncScheduler
 import com.google.android.gms.common.api.ApiException
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,6 +28,7 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val authManager: GoogleAuthManager,
     private val syncScheduler: SyncScheduler,
+    private val syncManager: SyncManager,
     private val prefs: AppPreferences,
 ) : ViewModel() {
 
@@ -63,7 +65,8 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(accountEmail = account.email, isSignedIn = true, syncError = null)
                 }
-                syncScheduler.triggerImmediateSync()
+                // Kick off background periodic sync; immediate full sync triggered by syncNow()
+                syncScheduler.schedulePeriodicSync()
             }.onFailure { e ->
                 val msg = when (e) {
                     is ApiException ->
@@ -81,13 +84,32 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { it.copy(accountEmail = null, isSignedIn = false) }
     }
 
+    /**
+     * Runs a full bidirectional sync immediately in the ViewModel coroutine scope.
+     * This gives real-time progress and proper error feedback to the UI.
+     */
     fun syncNow() {
+        if (_uiState.value.isSyncing) return   // debounce double-taps
         _uiState.update { it.copy(isSyncing = true, syncError = null) }
-        syncScheduler.triggerImmediateSync()
         viewModelScope.launch {
-            kotlinx.coroutines.delay(1_000)
-            _uiState.update { it.copy(isSyncing = false, lastSyncAt = prefs.getLastSyncAt()) }
+            runCatching {
+                syncManager.fullSync()
+            }.onSuccess {
+                _uiState.update {
+                    it.copy(
+                        isSyncing  = false,
+                        lastSyncAt = prefs.getLastSyncAt(),
+                        syncError  = null,
+                    )
+                }
+            }.onFailure { e ->
+                _uiState.update {
+                    it.copy(
+                        isSyncing = false,
+                        syncError = "Sync failed: ${e.message ?: "Unknown error"}",
+                    )
+                }
+            }
         }
     }
 }
-

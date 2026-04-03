@@ -17,7 +17,6 @@ import com.example.todoit.data.remote.sheets.toScheduleEntity
 import com.example.todoit.data.remote.sheets.toSheetRow
 import com.example.todoit.data.remote.sheets.toTaskEntity
 import com.example.todoit.data.remote.sheets.toTodoEntity
-import com.google.api.services.sheets.v4.model.ValueRange
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -96,44 +95,50 @@ class SyncManager @Inject constructor(
     }
 
     // ─── PUSH ──────────────────────────────────────────────────────────────
+    /**
+     * Appends every locally-dirty row to its corresponding sheet tab.
+     * Using append (not batchUpdate at A1) keeps the header row at row 1 intact and adds
+     * data rows after it.  Duplicate rows for the same entity ID are fine — the pull phase
+     * resolves them by always keeping the entry with the newest updatedAt.
+     */
     suspend fun push(spreadsheetId: String) = retryPolicy.executeWithRetry {
-        val updates = mutableListOf<ValueRange>()
         val now = System.currentTimeMillis()
 
         val dirtyGroups = groupDao.getDirtyRows()
         if (dirtyGroups.isNotEmpty()) {
-            val rows = dirtyGroups.map { it.toSheetRow() }
-            updates += ValueRange().setRange("groups!A1").setValues(rows)
+            sheetsApi.appendRows(spreadsheetId, "groups", dirtyGroups.map { it.toSheetRow() })
+            groupDao.markSynced(dirtyGroups.map { it.id }, now)
         }
 
         val dirtyTodos = todoDao.getDirtyRows()
         if (dirtyTodos.isNotEmpty()) {
-            updates += ValueRange().setRange("todo_items!A1").setValues(dirtyTodos.map { it.toSheetRow() })
+            sheetsApi.appendRows(spreadsheetId, "todo_items", dirtyTodos.map { it.toSheetRow() })
+            todoDao.markSynced(dirtyTodos.map { it.id }, now)
         }
 
         val dirtyTasks = taskDao.getDirtyRows()
         if (dirtyTasks.isNotEmpty()) {
-            updates += ValueRange().setRange("tasks!A1").setValues(dirtyTasks.map { it.toSheetRow() })
+            sheetsApi.appendRows(spreadsheetId, "tasks", dirtyTasks.map { it.toSheetRow() })
+            taskDao.markSynced(dirtyTasks.map { it.id }, now)
         }
 
         val dirtySchedules = scheduleDao.getDirtyRows()
         if (dirtySchedules.isNotEmpty()) {
-            updates += ValueRange().setRange("schedules!A1").setValues(dirtySchedules.map { it.toSheetRow() })
+            sheetsApi.appendRows(spreadsheetId, "schedules", dirtySchedules.map { it.toSheetRow() })
+            scheduleDao.markSynced(dirtySchedules.map { it.id }, now)
         }
 
         val dirtyLocations = locationDao.getDirtyRows()
         if (dirtyLocations.isNotEmpty()) {
-            updates += ValueRange().setRange("locations!A1").setValues(dirtyLocations.map { it.toSheetRow() })
+            sheetsApi.appendRows(spreadsheetId, "locations", dirtyLocations.map { it.toSheetRow() })
+            locationDao.markSynced(dirtyLocations.map { it.id }, now)
         }
 
-        sheetsApi.batchWriteRows(spreadsheetId, updates)
-
-        // Mark pushed rows as synced
-        groupDao.markSynced(dirtyGroups.map { it.id }, now)
-        todoDao.markSynced(dirtyTodos.map { it.id }, now)
-        taskDao.markSynced(dirtyTasks.map { it.id }, now)
-        scheduleDao.markSynced(dirtySchedules.map { it.id }, now)
-        locationDao.markSynced(dirtyLocations.map { it.id }, now)
+        val dirtyRecurrences = recurrenceDao.getDirtyRows()
+        if (dirtyRecurrences.isNotEmpty()) {
+            sheetsApi.appendRows(spreadsheetId, "recurrences", dirtyRecurrences.map { it.toSheetRow() })
+            recurrenceDao.markSynced(dirtyRecurrences.map { it.id }, now)
+        }
     }
 }
 

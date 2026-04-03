@@ -1,1 +1,16 @@
+# ─── Build outputs ───────────────────────────────────────────────────────────
 /build
+
+# ─── Firebase / Google Services ──────────────────────────────────────────────
+# SECURITY: contains Firebase project ID, API keys, and OAuth client IDs.
+# Keep this file local — never commit it to a public repository.
+google-services.json
+
+# ─── Signing keystores (sometimes placed in app/) ────────────────────────────
+*.jks
+*.keystore
+*.p12
+*.pfx
+keystore.properties
+release.properties
+signing.properties

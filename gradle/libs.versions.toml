@@ -11,6 +11,7 @@ composeBom = "2025.12.00"
 hilt = "2.59.2"
 hiltAndroidx = "1.2.0"
 ksp = "2.2.10-2.0.2"
+googleServices = "4.4.2"
 room = "2.7.0"
 lifecycleViewmodel = "2.8.7"
 navigationCompose = "2.8.9"
@@ -94,3 +95,4 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

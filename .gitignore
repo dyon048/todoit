@@ -1,15 +1,46 @@
+# ─── Build outputs ───────────────────────────────────────────────────────────
 *.iml
 .gradle
-/local.properties
+/build
+/captures
+.externalNativeBuild
+.cxx
+
+# ─── Local machine config (contains SDK path — never commit) ─────────────────
+local.properties
+
+# ─── Signing keystores & credential files ────────────────────────────────────
+# SECURITY: these files contain private keys / passwords — never commit them.
+*.jks
+*.keystore
+*.p12
+*.pfx
+keystore.properties
+release.properties
+signing.properties
+
+# ─── Secret / environment files ──────────────────────────────────────────────
+secrets.properties
+.env
+.env.*
+*.secret
+*.secrets
+
+# ─── Firebase / Google Services ──────────────────────────────────────────────
+# google-services.json contains API keys and OAuth client IDs.
+# Add to version control only if your repo is private AND you accept the risk.
+google-services.json
+GoogleService-Info.plist
+
+# ─── IntelliJ / Android Studio IDE files ─────────────────────────────────────
+.DS_Store
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+/.idea/.gitignore
+/.idea/deploymentTargetDropDown.xml
+/.idea/migrations.xml
+/.idea/androidTestResultsUserPreferences.xml

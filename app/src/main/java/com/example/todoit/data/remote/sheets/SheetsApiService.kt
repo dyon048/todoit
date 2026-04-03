@@ -97,5 +97,62 @@ class SheetsApiService @Inject constructor(
                 .setRequests(listOf(request))
             buildService().spreadsheets().batchUpdate(spreadsheetId, body).execute()
         }
+
+    /**
+     * Ensures all [sheetNames] tabs exist in the spreadsheet.
+     * If the spreadsheet has a default tab that isn't one of the desired names (e.g. "Sheet1"),
+     * it is renamed to the first missing name; remaining missing names get new tabs added.
+     * Idempotent — safe to call even if all tabs already exist.
+     */
+    suspend fun ensureSheetTabs(spreadsheetId: String, sheetNames: List<String>): Unit =
+        withContext(Dispatchers.IO) {
+            val spreadsheet = buildService().spreadsheets().get(spreadsheetId)
+                .setFields("sheets.properties.title,sheets.properties.sheetId")
+                .execute()
+            val existingSheets = spreadsheet.sheets.orEmpty()
+            val existingTitles = existingSheets.map { it.properties.title }.toMutableSet()
+
+            // A "reusable" sheet is any existing tab whose name is not one of our desired names
+            // (e.g. the default "Sheet1" Google creates on spreadsheet creation).
+            var reuseableSheet = existingSheets.firstOrNull { it.properties.title !in sheetNames }
+
+            val requests = mutableListOf<com.google.api.services.sheets.v4.model.Request>()
+
+            for (name in sheetNames) {
+                if (name in existingTitles) continue  // already exists — nothing to do
+
+                if (reuseableSheet != null) {
+                    // Rename the reusable sheet instead of adding a new tab
+                    requests += com.google.api.services.sheets.v4.model.Request()
+                        .setUpdateSheetProperties(
+                            com.google.api.services.sheets.v4.model.UpdateSheetPropertiesRequest()
+                                .setProperties(
+                                    com.google.api.services.sheets.v4.model.SheetProperties()
+                                        .setSheetId(reuseableSheet.properties.sheetId)
+                                        .setTitle(name)
+                                )
+                                .setFields("title")
+                        )
+                    existingTitles += name
+                    reuseableSheet = null  // consumed — only one default sheet to reuse
+                } else {
+                    // Add a brand-new tab
+                    requests += com.google.api.services.sheets.v4.model.Request()
+                        .setAddSheet(
+                            com.google.api.services.sheets.v4.model.AddSheetRequest()
+                                .setProperties(
+                                    com.google.api.services.sheets.v4.model.SheetProperties().setTitle(name)
+                                )
+                        )
+                    existingTitles += name
+                }
+            }
+
+            if (requests.isNotEmpty()) {
+                val body = com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest()
+                    .setRequests(requests)
+                buildService().spreadsheets().batchUpdate(spreadsheetId, body).execute()
+            }
+        }
 }
 

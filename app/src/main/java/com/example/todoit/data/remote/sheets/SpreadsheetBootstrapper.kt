@@ -28,18 +28,29 @@ class SpreadsheetBootstrapper @Inject constructor(
 
     /**
      * Returns the spreadsheetId (cached or freshly created).
-     * Safe to call multiple times — idempotent.
+     * Fully idempotent — safe to call on every sync.
+     *
+     * Order of operations:
+     *  1. Create the spreadsheet if no ID is cached yet (saves ID immediately to avoid orphans).
+     *  2. Ensure all 7 sheet tabs exist (renames default "Sheet1", adds any missing ones).
+     *  3. Write header rows to row 1 of each tab (safe to overwrite — headers are idempotent).
      */
     suspend fun ensureSpreadsheet(): String {
-        val cached = prefs.getSpreadsheetId()
-        if (!cached.isNullOrBlank()) return cached
+        var spreadsheetId = prefs.getSpreadsheetId()
 
-        // Create a new spreadsheet
-        val spreadsheetId = sheetsApi.createSpreadsheet("TodoIt Data")
+        if (spreadsheetId.isNullOrBlank()) {
+            // Create spreadsheet and persist ID *before* any further API calls so that a
+            // failure mid-setup doesn't leave us creating a new orphaned spreadsheet next time.
+            spreadsheetId = sheetsApi.createSpreadsheet("TodoIt Data")
+            prefs.setSpreadsheetId(spreadsheetId)
+            prefs.setLastSyncAt(0L)
+        }
 
-        // The first sheet is auto-created as "Sheet1" — rename it to "groups" by adding all
-        // named sheets (the first named sheet replaces the default).
-        // Simpler: just write headers to each sheet range — Sheets auto-creates tabs.
+        // Ensure all required sheet tabs exist (idempotent — skips tabs that already exist).
+        // Google Sheets does NOT auto-create tabs when you write to them.
+        sheetsApi.ensureSheetTabs(spreadsheetId, HEADERS.keys.toList())
+
+        // Write / refresh header rows (idempotent — overwriting row 1 with the same data is safe).
         val headerUpdates = HEADERS.map { (sheet, cols) ->
             ValueRange()
                 .setRange("$sheet!A1")
@@ -47,8 +58,6 @@ class SpreadsheetBootstrapper @Inject constructor(
         }
         sheetsApi.batchWriteRows(spreadsheetId, headerUpdates)
 
-        prefs.setSpreadsheetId(spreadsheetId)
-        prefs.setLastSyncAt(0L)
         return spreadsheetId
     }
 }
