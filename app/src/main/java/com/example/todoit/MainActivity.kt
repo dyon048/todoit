@@ -40,9 +40,10 @@ enum class AppDestinations(
     val icon: Int,
     val route: String,
 ) {
-    HOME("Home", R.drawable.ic_home, Screen.HOME),
-    GROUPS("Groups", R.drawable.ic_favorite, Screen.GROUPS),
-    SETTINGS("Settings", R.drawable.ic_account_box, Screen.SETTINGS),
+    HOME(    "Home",    R.drawable.ic_home,        Screen.HOME),
+    GROUPS(  "Groups",  R.drawable.ic_favorite,    Screen.GROUPS),
+    BROWSE(  "Browse",  R.drawable.ic_browse,      Screen.BROWSE),
+    SETTINGS("Settings",R.drawable.ic_account_box, Screen.SETTINGS),
 }
 
 @Composable

@@ -7,6 +7,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.todoit.presentation.browse.BrowseScreen
 import com.example.todoit.presentation.groups.GroupDetailScreen
 import com.example.todoit.presentation.groups.GroupsScreen
 import com.example.todoit.presentation.home.HomeScreen
@@ -19,6 +20,7 @@ import com.example.todoit.presentation.todos.TodoDetailScreen
 object Screen {
     const val HOME      = "home"
     const val GROUPS    = "groups"
+    const val BROWSE    = "browse"
     const val SETTINGS  = "settings"
     const val SCHEDULES = "schedules"
 
@@ -51,6 +53,10 @@ fun TodoItNavHost(
 
         composable(Screen.GROUPS) {
             GroupsScreen(navController = navController)
+        }
+
+        composable(Screen.BROWSE) {
+            BrowseScreen(navController = navController)
         }
 
         composable(
