@@ -9,7 +9,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -61,6 +64,7 @@ fun TodoItApp() {
                         Icon(
                             painterResource(dest.icon),
                             contentDescription = dest.label,
+                            modifier = Modifier.size(24.dp),
                         )
                     },
                     label = { Text(dest.label) },
