@@ -17,7 +17,7 @@ class SpreadsheetBootstrapper @Inject constructor(
     companion object {
         private val HEADERS: Map<String, List<String>> = mapOf(
             "groups"      to listOf("id","parent_id","name","color","schedule_id","created_at","updated_at","deleted_at","synced_at"),
-            "todo_items"  to listOf("id","group_id","title","description","created_at","updated_at","deleted_at","synced_at"),
+            "todo_items"  to listOf("id","group_id","title","description","created_at","updated_at","deleted_at","synced_at","status"),
             "tasks"       to listOf("id","todo_id","title","status","priority","due_date","start_time","reminder_at","location_id","schedule_id","inherit_schedule","recurrence_id","recurrence_instance_date","parent_task_id","score_cache","created_at","updated_at","deleted_at","synced_at"),
             "schedules"   to listOf("id","name","active_days","start_time_of_day","end_time_of_day","updated_at","deleted_at","synced_at"),
             "recurrences" to listOf("id","type","interval","days_of_week","end_date","max_occurrences","updated_at","synced_at"),

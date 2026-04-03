@@ -6,10 +6,12 @@ import com.example.todoit.domain.model.GroupNode
 import com.example.todoit.domain.model.Task
 import com.example.todoit.domain.model.TaskStatus
 import com.example.todoit.domain.model.TodoItem
+import com.example.todoit.domain.model.TodoStatus
 import com.example.todoit.domain.usecase.group.GetGroupTreeUseCase
 import com.example.todoit.domain.usecase.task.GetTasksForTodoUseCase
 import com.example.todoit.domain.usecase.task.UpsertTaskUseCase
 import com.example.todoit.domain.usecase.todo.GetTodosForGroupUseCase
+import com.example.todoit.domain.usecase.todo.UpdateTodoStatusUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +34,7 @@ class BrowseViewModel @Inject constructor(
     private val getTodosForGroup: GetTodosForGroupUseCase,
     private val getTasksForTodo: GetTasksForTodoUseCase,
     private val upsertTask: UpsertTaskUseCase,
+    private val updateTodoStatus: UpdateTodoStatusUseCase,
 ) : ViewModel() {
 
     /** IDs of groups whose todo list is currently visible. */
@@ -127,6 +130,13 @@ class BrowseViewModel @Inject constructor(
         runCatching {
             val newStatus = if (task.status == TaskStatus.DONE) TaskStatus.PENDING else TaskStatus.DONE
             upsertTask(task.copy(status = newStatus))
+        }
+    }
+
+    fun toggleTodoStatus(todo: TodoItem) = viewModelScope.launch {
+        runCatching {
+            val newStatus = if (todo.status == TodoStatus.DONE) TodoStatus.PENDING else TodoStatus.DONE
+            updateTodoStatus(todo.id, newStatus)
         }
     }
 

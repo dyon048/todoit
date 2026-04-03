@@ -5,6 +5,7 @@ import com.example.todoit.data.local.entity.toDomain
 import com.example.todoit.data.local.entity.toEntity
 import com.example.todoit.data.sync.SyncScheduler
 import com.example.todoit.domain.model.TodoItem
+import com.example.todoit.domain.model.TodoStatus
 import com.example.todoit.domain.repository.TodoRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -37,6 +38,11 @@ class TodoRepositoryImpl @Inject constructor(
 
     override suspend fun softDeleteTodosByGroup(groupId: String) {
         dao.softDeleteByGroup(groupId, System.currentTimeMillis())
+        syncScheduler.triggerImmediateSync()
+    }
+
+    override suspend fun updateTodoStatus(id: String, status: TodoStatus) {
+        dao.updateStatus(id, status.name, System.currentTimeMillis())
         syncScheduler.triggerImmediateSync()
     }
 }

@@ -4,9 +4,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todoit.domain.model.TodoItem
+import com.example.todoit.domain.model.TodoStatus
 import com.example.todoit.domain.repository.GroupRepository
 import com.example.todoit.domain.usecase.todo.DeleteTodoUseCase
 import com.example.todoit.domain.usecase.todo.GetTodosForGroupUseCase
+import com.example.todoit.domain.usecase.todo.UpdateTodoStatusUseCase
 import com.example.todoit.domain.usecase.todo.UpsertTodoUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +34,7 @@ class GroupDetailViewModel @Inject constructor(
     private val upsertTodo: UpsertTodoUseCase,
     private val deleteTodo: DeleteTodoUseCase,
     private val groupRepository: GroupRepository,
+    private val updateTodoStatus: UpdateTodoStatusUseCase,
 ) : ViewModel() {
 
     val groupId: String = checkNotNull(savedStateHandle["groupId"])
@@ -55,5 +58,11 @@ class GroupDetailViewModel @Inject constructor(
 
     fun save(todo: TodoItem) = viewModelScope.launch { runCatching { upsertTodo(todo) } }
     fun delete(todoId: String) = viewModelScope.launch { runCatching { deleteTodo(todoId) } }
+    fun toggleTodoStatus(todo: TodoItem) = viewModelScope.launch {
+        runCatching {
+            val newStatus = if (todo.status == TodoStatus.DONE) TodoStatus.PENDING else TodoStatus.DONE
+            updateTodoStatus(todo.id, newStatus)
+        }
+    }
 }
 

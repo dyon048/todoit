@@ -3,6 +3,7 @@ package com.example.todoit.domain.usecase.task
 import com.example.todoit.domain.model.Task
 import com.example.todoit.domain.model.TaskStatus
 import com.example.todoit.domain.repository.TaskRepository
+import com.example.todoit.domain.usecase.todo.SyncTodoStatusUseCase
 import com.example.todoit.notification.ReminderScheduler
 import java.util.UUID
 import javax.inject.Inject
@@ -11,6 +12,7 @@ class UpsertTaskUseCase @Inject constructor(
     private val repository: TaskRepository,
     private val expandRecurrence: ExpandRecurrenceUseCase,
     private val reminderScheduler: ReminderScheduler,
+    private val syncTodoStatus: SyncTodoStatusUseCase,
 ) {
     suspend operator fun invoke(task: Task) {
         val now = System.currentTimeMillis()
@@ -30,5 +32,8 @@ class UpsertTaskUseCase @Inject constructor(
         }
 
         if (saved.recurrenceId != null) expandRecurrence(saved)
+
+        // Keep parent todo's status in sync
+        syncTodoStatus(saved.todoId)
     }
 }

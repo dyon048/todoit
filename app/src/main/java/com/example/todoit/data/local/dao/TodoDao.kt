@@ -36,5 +36,8 @@ interface TodoDao {
 
     @Query("UPDATE todo_items SET synced_at = :ts WHERE id IN (:ids)")
     suspend fun markSynced(ids: List<String>, ts: Long)
+
+    @Query("UPDATE todo_items SET status = :status, updated_at = :ts, synced_at = NULL WHERE id = :id")
+    suspend fun updateStatus(id: String, status: String, ts: Long)
 }
 

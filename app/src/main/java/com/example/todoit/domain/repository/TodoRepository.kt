@@ -1,6 +1,7 @@
 package com.example.todoit.domain.repository
 
 import com.example.todoit.domain.model.TodoItem
+import com.example.todoit.domain.model.TodoStatus
 import kotlinx.coroutines.flow.Flow
 
 interface TodoRepository {
@@ -10,5 +11,6 @@ interface TodoRepository {
     suspend fun upsertTodo(todo: TodoItem)
     suspend fun softDeleteTodo(id: String)
     suspend fun softDeleteTodosByGroup(groupId: String)
+    suspend fun updateTodoStatus(id: String, status: TodoStatus)
 }
 

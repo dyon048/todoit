@@ -102,6 +102,7 @@ fun BrowseScreen(
                                         TodoRow(
                                             item = listItem,
                                             onClick = { viewModel.toggleTodo(listItem.todo.id) },
+                                            onToggle = { viewModel.toggleTodoStatus(listItem.todo) },
                                         )
 
                                     is BrowseListItem.TaskSubRow ->

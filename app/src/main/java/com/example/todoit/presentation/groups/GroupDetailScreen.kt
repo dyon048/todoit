@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -34,6 +35,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.example.todoit.domain.model.TodoItem
+import com.example.todoit.domain.model.TodoStatus
 import com.example.todoit.presentation.common.ConfirmDeleteDialog
 import com.example.todoit.presentation.common.EmptyStateView
 import com.example.todoit.presentation.common.Screen
@@ -84,6 +86,12 @@ fun GroupDetailScreen(
                             ListItem(
                                 headlineContent = { Text(todo.title) },
                                 supportingContent = todo.description?.let { { Text(it) } },
+                                leadingContent = {
+                                    Checkbox(
+                                        checked = todo.status == TodoStatus.DONE,
+                                        onCheckedChange = { viewModel.toggleTodoStatus(todo) },
+                                    )
+                                },
                                 trailingContent = {
                                     IconButton(onClick = { deleteTarget = todo }) {
                                         Icon(Icons.Default.Delete, contentDescription = "Delete")
@@ -157,16 +165,17 @@ private fun TodoEditDialog(
                 onClick = {
                     val now = System.currentTimeMillis()
                     onSave(
-                        TodoItem(
-                            id = initial?.id ?: UUID.randomUUID().toString(),
-                            groupId = groupId,
-                            title = title.trim(),
-                            description = description.trim().ifBlank { null },
-                            createdAt = initial?.createdAt ?: now,
-                            updatedAt = now,
-                            deletedAt = null,
-                        )
-                    )
+                                        TodoItem(
+                                            id = initial?.id ?: UUID.randomUUID().toString(),
+                                            groupId = groupId,
+                                            title = title.trim(),
+                                            description = description.trim().ifBlank { null },
+                                            status = initial?.status ?: TodoStatus.PENDING,
+                                            createdAt = initial?.createdAt ?: now,
+                                            updatedAt = now,
+                                            deletedAt = null,
+                                        )
+                                    )
                 }
             ) { Text("Save") }
         },

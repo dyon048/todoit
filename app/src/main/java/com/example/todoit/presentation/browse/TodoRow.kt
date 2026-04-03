@@ -14,9 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -32,13 +31,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.todoit.domain.model.TodoStatus
 
 /**
  * A todo sub-row shown when its parent group is expanded.
  *
  * - Indented relative to its parent group via [BrowseListItem.TodoSubRow.depth]
  * - Subtle surface-variant background to visually separate from group rows
- * - Shows a completion icon, todo title, optional description preview
+ * - Shows a Checkbox driven by [TodoItem.status], todo title, optional description preview
  * - Linear progress bar + "X/Y" fraction when there are tasks
  * - Animated chevron for task list expansion
  */
@@ -47,13 +47,14 @@ import androidx.compose.ui.unit.dp
 fun TodoRow(
     item: BrowseListItem.TodoSubRow,
     onClick: () -> Unit,
+    onToggle: () -> Unit,
 ) {
     val chevronAngle by animateFloatAsState(
         targetValue = if (item.isExpanded) 90f else 0f,
         label = "todo_chevron",
     )
     val progress = if (item.totalCount > 0) item.doneCount.toFloat() / item.totalCount else 0f
-    val allDone = item.totalCount > 0 && item.doneCount == item.totalCount
+    val isDone = item.todo.status == TodoStatus.DONE
 
     Column(
         modifier = Modifier
@@ -68,14 +69,10 @@ fun TodoRow(
             ),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = if (allDone) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                contentDescription = null,
-                tint = if (allDone)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
+            Checkbox(
+                checked = isDone,
+                onCheckedChange = { onToggle() },
+                modifier = Modifier.size(24.dp),
             )
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -83,8 +80,8 @@ fun TodoRow(
                     text = item.todo.title,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
-                    textDecoration = if (allDone) TextDecoration.LineThrough else TextDecoration.None,
-                    color = if (allDone)
+                    textDecoration = if (isDone) TextDecoration.LineThrough else TextDecoration.None,
+                    color = if (isDone)
                         MaterialTheme.colorScheme.onSurfaceVariant
                     else
                         MaterialTheme.colorScheme.onSurface,
@@ -125,7 +122,7 @@ fun TodoRow(
                     .fillMaxWidth()
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp)),
-                color = if (allDone)
+                color = if (isDone)
                     MaterialTheme.colorScheme.primary
                 else
                     MaterialTheme.colorScheme.secondary,
@@ -138,4 +135,3 @@ fun TodoRow(
         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
     )
 }
-

@@ -26,7 +26,7 @@ import com.example.todoit.data.local.entity.TodoEntity
         RecurrenceEntity::class,
         LocationEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class TodoItDatabase : RoomDatabase() {
@@ -41,6 +41,7 @@ abstract class TodoItDatabase : RoomDatabase() {
     companion object {
         fun create(context: Context): TodoItDatabase =
             Room.databaseBuilder(context, TodoItDatabase::class.java, "todoit.db")
+                .addMigrations(MIGRATION_1_2)
                 .fallbackToDestructiveMigration()
                 .build()
     }

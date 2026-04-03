@@ -5,8 +5,8 @@ data class TodoItem(
     val groupId: String,
     val title: String,
     val description: String?,
+    val status: TodoStatus,
     val createdAt: Long,
     val updatedAt: Long,
     val deletedAt: Long?,
 )
-

@@ -31,10 +31,10 @@ fun List<Any>.toGroupEntity(): GroupEntity? = runCatching {
     )
 }.getOrNull()
 
-// TODO_ITEMS: id | group_id | title | description | created_at | updated_at | deleted_at | synced_at
+// TODO_ITEMS: id | group_id | title | description | created_at | updated_at | deleted_at | synced_at | status
 fun TodoEntity.toSheetRow(): List<Any> = listOf(
     id, groupId, title, description ?: "",
-    createdAt, updatedAt, deletedAt ?: "", syncedAt ?: ""
+    createdAt, updatedAt, deletedAt ?: "", syncedAt ?: "", status
 )
 
 fun List<Any>.toTodoEntity(): TodoEntity? = runCatching {
@@ -47,6 +47,8 @@ fun List<Any>.toTodoEntity(): TodoEntity? = runCatching {
         updatedAt   = get(5).toString().toLong(),
         deletedAt   = get(6).toString().toLongOrNull(),
         syncedAt    = get(7).toString().toLongOrNull(),
+        // index 8 is status — default to "PENDING" for older rows that lack it
+        status      = getOrNull(8)?.toString()?.takeIf { it.isNotBlank() } ?: "PENDING",
     )
 }.getOrNull()
 
